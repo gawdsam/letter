@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#101c33">
+<title>A letter for you</title>
+<meta name="robots" content="noindex">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600&family=Lora:ital,wght@0,400;0,500;1,400;1,500&family=Karla:wght@400;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#101c33; --ink:#f1ece2; --muted:#9fb0c9; --line:#2f4268; --gold:#d6b56d; --err:#ff9d8a; color-scheme:dark;
+    --env:#e9e1d3; --env-dark:#d9ceb8; --seal:#7a2e2e; --paper:#101c33;
+    --serif:'Cormorant Garamond',Georgia,serif; --type:Lora,Georgia,serif; --sans:Karla,system-ui,sans-serif;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0}
+  body{background:var(--bg);color:var(--ink);font-family:var(--sans);min-height:100vh;
+    padding:max(24px,env(safe-area-inset-top)) 14px max(32px,env(safe-area-inset-bottom));display:flex;flex-direction:column;align-items:center}
+  [hidden]{display:none!important}
+  main{width:100%;max-width:760px;margin:auto 0}
+  #editor{max-width:560px;margin:0 auto}
+
+  /* ---------- Editor ---------- */
+  h1{font-family:var(--serif);font-weight:500;font-size:clamp(2rem,7vw,2.8rem);margin:0 0 6px;letter-spacing:.2px}
+  .lede{color:var(--muted);margin:0 0 28px;line-height:1.5}
+  label{display:block;font-size:.88rem;font-weight:600;margin:18px 0 6px}
+  .opt{font-weight:400;color:var(--muted)}
+  input,textarea{width:100%;font:inherit;color:var(--ink);background:transparent;border:0;border-bottom:1px solid var(--line);padding:8px 0;border-radius:0}
+  textarea{font-family:var(--type);min-height:190px;resize:vertical;line-height:1.6;border:1px solid var(--line);padding:12px;background:var(--paper)}
+  input:focus,textarea:focus{outline:none;border-color:var(--ink)}
+  .two{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+  .actions{display:flex;gap:12px;flex-wrap:wrap;margin-top:28px}
+  button{font:inherit;font-weight:600;cursor:pointer;padding:12px 22px;border-radius:999px;border:1px solid var(--ink);background:var(--ink);color:var(--bg);transition:opacity .2s}
+  button:hover{opacity:.85}
+  button.ghost{background:transparent;color:var(--ink)}
+  button:focus-visible,a:focus-visible{outline:2px solid var(--gold);outline-offset:3px}
+  .share{margin-top:28px;padding-top:22px;border-top:1px solid var(--line)}
+  .hint{font-size:.85rem;color:var(--muted);line-height:1.5;margin:10px 0 0}
+  select{width:100%;font:inherit;color:var(--ink);background:transparent;border:0;border-bottom:1px solid var(--line);padding:8px 0;border-radius:0}
+  select:focus{outline:none;border-color:var(--ink)}
+  select option{color:#22201d;background:#fff}
+  .err{color:var(--err);font-size:.88rem;margin-top:10px}
+
+  /* ---------- Envelope ---------- */
+  #stage{display:flex;flex-direction:column;align-items:center;gap:26px;width:100%}
+  .scene{perspective:1200px;transition:opacity .7s,transform .7s}
+  .scene.away{opacity:0;transform:translateY(24px) scale(.97);pointer-events:none}
+  .env{position:relative;width:min(88vw,440px);aspect-ratio:3/2;filter:drop-shadow(0 18px 26px rgba(0,0,0,.45))}
+  .env>*{position:absolute}
+  .back{inset:0;background:var(--env);border-radius:3px}
+  .sheet{left:6%;top:8%;width:88%;height:84%;background:#f7f1e3;z-index:2;border-radius:2px;transition:transform .9s cubic-bezier(.3,.7,.2,1) .5s}
+  .front{inset:0;z-index:3;background:var(--env);clip-path:polygon(0 0,50% 52%,100% 0,100% 100%,0 100%);border-radius:3px}
+  .flap{left:0;top:0;width:100%;height:52%;z-index:4;background:var(--env-dark);clip-path:polygon(0 0,100% 0,50% 100%);
+    transform-origin:top;transition:transform .8s ease,z-index 0s;backface-visibility:visible}
+  .addr{left:0;right:0;bottom:12%;z-index:5;color:#22201d;text-align:center;font-family:var(--serif);font-size:clamp(1.2rem,5vw,1.6rem);padding:0 10%;overflow-wrap:anywhere}
+  .seal{left:50%;top:52%;z-index:6;width:52px;height:52px;margin:-26px 0 0 -26px;padding:0;border-radius:50%;
+    background:radial-gradient(circle at 35% 30%,#a14444,var(--seal) 65%);border:0;color:#f58a33;
+    font-family:var(--serif);font-size:1.5rem;font-weight:600;font-variant-emoji:text;box-shadow:0 2px 6px rgba(0,0,0,.3);transition:opacity .4s,transform .4s}
+  .seal:hover{opacity:1;transform:scale(1.06)}
+  .env.open .flap{transform:rotateX(180deg);z-index:1;transition:transform .8s ease,z-index 0s .35s}
+  .env.open .seal{opacity:0;pointer-events:none}
+  .env.open .sheet{transform:translateY(-38%)}
+  .tap{font-family:var(--serif);font-size:1.1rem;color:var(--muted);margin:0;transition:opacity .4s}
+  .tap.gone{opacity:0}
+
+  /* ---------- Letter ---------- */
+  .letter{width:100%;max-width:720px;--ink:#26231f;--muted:#7a7165;--line:#d9d0bf;color:var(--ink);background:#f7f1e3;border:1px solid var(--line);padding:clamp(22px,5.5vw,56px);
+    box-shadow:0 14px 34px rgba(0,0,0,.1);animation:rise .9s ease both}
+  @keyframes rise{from{opacity:0;transform:translateY(18px)}to{opacity:1;transform:none}}
+  .text{font-family:var(--type);font-size:var(--fs,clamp(1rem,3.9vw,1.12rem));line-height:var(--lh,1.85);white-space:pre-wrap;min-height:220px}
+  .text{display:grid}
+  .text>*{grid-area:1/1;min-width:0}
+  .text .ghost{visibility:hidden}
+  .text.allit{font-style:italic}
+  .caret{display:inline-block;width:.55ch;height:1.05em;background:var(--ink);vertical-align:-.15em;animation:blink 1s steps(1) infinite}
+  @keyframes blink{50%{opacity:0}}
+  .skipbtn{display:block;margin:0 0 18px auto;padding:7px 16px;font-size:.82rem;background:transparent;color:var(--muted);border:1px solid var(--line)}
+  .skipbtn:hover{color:var(--ink);border-color:var(--ink);opacity:1}
+  .cta{margin-top:30px;display:none}
+  .cta.show{display:block;animation:rise .8s ease both}
+  .cta a{display:inline-block;background:#101c33;color:#f7f1e3;text-decoration:none;padding:13px 26px;border-radius:999px;font-weight:600}
+  .letter a:focus-visible,.letter button:focus-visible{outline-color:#101c33}
+  .below{margin-top:16px;font-size:.85rem;color:var(--muted);display:flex;gap:16px;justify-content:center}
+  .below a{color:inherit}
+  .player{display:none;margin-top:32px}
+  .player.show{display:block;animation:rise .9s ease both}
+  .frame{position:relative;width:100%;aspect-ratio:16/9;background:#000;border-radius:3px;overflow:hidden;box-shadow:0 10px 26px rgba(0,0,0,.2)}
+  .frame iframe,.frame video{position:absolute;inset:0;width:100%;height:100%;border:0}
+  @media (max-width:480px){.two{grid-template-columns:1fr;gap:0}.seal{width:46px;height:46px;margin:-23px 0 0 -23px}}
+  @media (prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition-duration:.01s!important}}
+</style>
+</head>
+<body>
+<main>
+
+  <!-- EDITOR -->
+  <section id="editor">
+    <h1>Write a letter</h1>
+    <p class="lede">Fill this in once, get a link, send it to anyone. They’ll open an envelope and watch your words appear.</p>
+
+    <div class="two">
+      <div><label for="to">To</label><input id="to" value="Maya" autocomplete="off"></div>
+      <div><label for="from">From</label><input id="from" value="Sam" autocomplete="off"></div>
+    </div>
+
+    <label for="msg">Your message</label>
+    <textarea id="msg">I wanted to tell you this in a way that felt a little more special than a text.
+
+Thank you for being there this year. Every laugh, every long call, every ridiculous plan mattered more than you know.
+
+I made something for you.</textarea>
+
+    <label for="vid">Video link <span class="opt">(optional, plays inside the letter)</span></label>
+    <input id="vid" type="url" placeholder="https://youtube.com/watch?v=…" autocomplete="off">
+    <p class="hint">Works with YouTube, Vimeo, Google Drive (set sharing to “Anyone with the link”) and direct .mp4 links. Any other link shows a button that opens in a new tab.</p>
+
+    <div class="two">
+      <div><label for="btn">Button text <span class="opt">(if it can’t play inside)</span></label><input id="btn" value="Watch your video" autocomplete="off"></div>
+      <div><label for="sign">Closing</label><input id="sign" value="With love," autocomplete="off"></div>
+    </div>
+    <div class="two">
+      <div><label for="speed">Typing speed</label>
+        <select id="speed"><option value="slow">Slow</option><option value="normal" selected>Normal</option><option value="fast">Fast</option><option value="veryfast">Very fast</option></select></div>
+      <div><label for="space">Line spacing</label>
+        <select id="space"><option value="tight">Tight</option><option value="normal" selected>Normal</option><option value="relaxed">Relaxed</option><option value="wide">Wide</option></select></div>
+    </div>
+    <div class="two">
+      <div><label for="sealtype">Seal symbol</label>
+        <select id="sealtype"><option value="heart" selected>Heart</option><option value="initial">My first initial</option></select></div>
+      <div><label for="ital">Letter style</label>
+        <select id="ital"><option value="no" selected>Regular</option><option value="yes">All italic</option></select></div>
+    </div>
+    <div class="two">
+      <div><label for="size">Text size</label>
+        <select id="size"><option value="small">Small</option><option value="medium" selected>Medium</option><option value="large">Large</option><option value="xl">Extra large</option></select></div>
+    </div>
+    <p class="hint">To italicize just a few words, put them between asterisks, like *this*.</p>
+    <div class="err" id="err" role="alert"></div>
+
+    <div class="actions">
+      <button id="preview">Preview</button>
+      <button id="make" class="ghost">Create link</button>
+    </div>
+
+    <div class="share" id="share" hidden>
+      <label for="link" style="margin-top:0">Your link</label>
+      <input id="link" readonly>
+      <div class="actions" style="margin-top:16px"><button id="copy" class="ghost">Copy link</button></div>
+      <p class="hint">Anyone with this link can read the letter. The letter lives inside the link, so nothing is stored on a server. Change the text above and create a new link whenever you like.</p>
+    </div>
+  </section>
+
+  <!-- ENVELOPE + LETTER -->
+  <section id="stage" hidden>
+    <div class="scene" id="scene">
+      <div class="env" id="env">
+        <div class="back"></div>
+        <div class="sheet"></div>
+        <div class="front"></div>
+        <div class="flap"></div>
+        <div class="addr" id="addr"></div>
+        <button class="seal" id="seal" aria-label="Open the envelope"></button>
+      </div>
+    </div>
+    <p class="tap" id="tap">Tap the seal to open</p>
+
+    <article class="letter" id="letter" hidden>
+      <button class="skipbtn" id="skip" type="button">Skip to the end</button>
+      <div class="text" id="text" aria-live="polite"></div>
+      <div class="player" id="player"></div>
+      <div class="cta" id="cta"><a id="go" target="_blank" rel="noopener noreferrer"></a></div>
+    </article>
+    <div class="below" id="below" hidden>
+      <a href="#" id="back">Back to editor</a>
+    </div>
+  </section>
+
+</main>
+
+<script>
+(function(){
+  var $ = function(id){ return document.getElementById(id); };
+  var timer, sharedMode = false;
+
+  /* --- encode / decode the letter into the URL (works on any static host) --- */
+  function enc(o){ return btoa(unescape(encodeURIComponent(JSON.stringify(o)))).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,''); }
+  function dec(s){ s=s.replace(/-/g,'+').replace(/_/g,'/'); while(s.length%4) s+='='; return JSON.parse(decodeURIComponent(escape(atob(s)))); }
+  function safeUrl(u){ try{ var x=new URL(u); return /^https?:$/.test(x.protocol)?x.href:''; }catch(e){ return ''; } }
+  function read(){ return {to:$('to').value.trim(), from:$('from').value.trim(), msg:$('msg').value, vid:$('vid').value.trim(),
+                           btn:$('btn').value.trim()||'Watch the video', sign:$('sign').value.trim(),
+                           speed:$('speed').value, space:$('space').value, seal:$('sealtype').value, ital:$('ital').value, size:$('size').value}; }
+
+  /* --- scene --- */
+  function show(d, fromEditor){
+    sharedMode = !fromEditor;
+    $('editor').hidden = true; $('stage').hidden = false;
+    $('below').hidden = true; $('letter').hidden = true; $('cta').classList.remove('show'); $('player').innerHTML=''; $('player').classList.remove('show');
+    $('back').style.display = fromEditor ? '' : 'none';
+    $('addr').textContent = d.to ? d.to : 'For you';
+    $('seal').textContent = (d.seal==='initial' && d.from) ? Array.from(d.from)[0].toUpperCase() : '\u2665\uFE0E';
+    $('env').classList.remove('open'); $('scene').classList.remove('away'); $('scene').hidden = false;
+    $('tap').classList.remove('gone'); $('tap').hidden = false;
+    $('text').textContent = '';
+    clearTimeout(timer);
+    window.scrollTo(0,0);
+
+    $('seal').onclick = function(){
+      $('env').classList.add('open'); $('tap').classList.add('gone');
+      setTimeout(function(){ $('scene').classList.add('away'); }, 1700);
+      setTimeout(function(){ $('scene').hidden = true; $('tap').hidden = true; type(d); }, 2400);
+    };
+    $('seal').focus({preventScroll:true});
+  }
+
+  /* --- typewriter --- */
+  var SPEED = {slow:1.8, normal:1, fast:.5, veryfast:.25};
+  var SIZE = {small:'clamp(.9rem,3.5vw,1rem)', medium:'clamp(1rem,3.9vw,1.12rem)', large:'clamp(1.1rem,4.4vw,1.3rem)', xl:'clamp(1.25rem,5vw,1.5rem)'};
+  var SPACE = {tight:1.4, normal:1.85, relaxed:2.2, wide:2.6};
+  function type(d){
+    var text = (d.to ? 'Dear ' + d.to + ',\n\n' : '') + d.msg + (d.sign||d.from ? '\n\n' + (d.sign?d.sign+'\n':'') + d.from : '');
+    var url = safeUrl(d.vid), a = $('go');
+    if(url){ a.href = url; a.textContent = d.btn; }
+    var k = SPEED[d.speed] || 1;
+    $('text').style.setProperty('--lh', SPACE[d.space] || 1.85);
+    $('text').style.setProperty('--fs', SIZE[d.size] || SIZE.medium);
+    $('letter').hidden = false; $('below').hidden = false;
+    $('back').style.display = sharedMode ? 'none' : '';
+    var box = $('text'); box.textContent = '';
+    box.className = 'text' + (d.ital==='yes' ? ' allit' : '');
+    var caret = document.createElement('span'); caret.className = 'caret';
+    // *word* marks italics (only if asterisks come in pairs)
+    var segs = [], it = false, pairs = (text.split('*').length - 1) % 2 === 0;
+    Array.from(text).forEach(function(c){
+      if(c==='*' && pairs){ it = !it; } else { segs.push({c:c, i:it}); }
+    });
+    var cur = null, curIt = null, i = 0;
+    function add(seg){
+      if(!cur || curIt !== seg.i){
+        cur = document.createTextNode(''); curIt = seg.i;
+        if(seg.i){ var e = document.createElement('i'); e.appendChild(cur); live.insertBefore(e, caret.parentNode ? caret : null); }
+        else live.insertBefore(cur, caret.parentNode ? caret : null);
+      }
+      cur.nodeValue += seg.c;
+    }
+    var ghost = document.createElement('div'); ghost.className = 'ghost'; ghost.setAttribute('aria-hidden','true');
+    var live = document.createElement('div'); live.className = 'live';
+    box.appendChild(ghost); box.appendChild(live);
+    (function(){ var c = null, ci = null;
+      segs.forEach(function(sg){
+        if(!c || ci !== sg.i){ c = document.createTextNode(''); ci = sg.i;
+          if(sg.i){ var e = document.createElement('i'); e.appendChild(c); ghost.appendChild(e); } else ghost.appendChild(c); }
+        c.nodeValue += sg.c; });
+    })();
+    live.appendChild(caret);
+    function done(){
+      clearTimeout(timer); caret.remove(); cur = null;
+      live.textContent = ''; ghost.remove();
+      segs.forEach(add);
+      $('skip').hidden = true; if(url) reveal(url);
+    }
+    function tick(){
+      if(i >= segs.length) return done();
+      var sg = segs[i++], c = sg.c; add(sg);
+      var t = (32 + Math.random()*50) * k;
+      if(',;:'.indexOf(c)>-1) t += 150 * k;
+      if('.!?'.indexOf(c)>-1) t += 380 * k;
+      if(c==='\n') t += 280 * k;
+      timer = setTimeout(tick, t);
+    }
+    $('skip').hidden = false;
+    $('skip').onclick = function(e){ e.preventDefault(); done(); };
+    if(window.matchMedia('(prefers-reduced-motion: reduce)').matches) done(); else tick();
+  }
+
+  /* --- inline video --- */
+  function embedFor(u){
+    var x; try{ x = new URL(u); }catch(e){ return null; }
+    var h = x.hostname.replace(/^www\./,''), m;
+    if(h==='youtu.be'){ m = x.pathname.match(/^\/([\w-]{11})/); if(m) return {t:'i', src:'https://www.youtube-nocookie.com/embed/'+m[1]}; }
+    if(/(^|\.)youtube\.com$/.test(h)){
+      m = x.pathname.match(/^\/(?:shorts|embed|live)\/([\w-]{11})/);
+      var id = m ? m[1] : x.searchParams.get('v');
+      if(id && /^[\w-]{11}$/.test(id)) return {t:'i', src:'https://www.youtube-nocookie.com/embed/'+id};
+    }
+    if(h==='vimeo.com'){ m = x.pathname.match(/\/(\d+)/); if(m) return {t:'i', src:'https://player.vimeo.com/video/'+m[1]}; }
+    if(h==='drive.google.com'){ m = x.pathname.match(/\/file\/d\/([\w-]+)/); if(m) return {t:'i', src:'https://drive.google.com/file/d/'+m[1]+'/preview'}; }
+    if(/\.(mp4|webm|mov|m4v|ogv)$/i.test(x.pathname)) return {t:'v', src:x.href};
+    return null;
+  }
+  function reveal(url){
+    var e = embedFor(url);
+    if(!e){ $('cta').classList.add('show'); return; }
+    var box = document.createElement('div'), el; box.className = 'frame';
+    if(e.t==='v'){ el = document.createElement('video'); el.src = e.src; el.controls = true; el.playsInline = true; el.preload = 'metadata'; }
+    else { el = document.createElement('iframe'); el.src = e.src; el.title = 'Video'; el.allowFullscreen = true; el.referrerPolicy = 'strict-origin-when-cross-origin';
+           el.allow = 'accelerometer; encrypted-media; picture-in-picture; fullscreen'; }
+    box.appendChild(el); $('player').innerHTML=''; $('player').appendChild(box); $('player').classList.add('show');
+    setTimeout(function(){ box.scrollIntoView({behavior:'smooth', block:'center'}); }, 300);
+  }
+
+  /* --- editor actions --- */
+  function valid(d){
+    $('err').textContent = '';
+    if(!d.msg.trim()){ $('err').textContent = 'Write a message first.'; return false; }
+    if(d.vid && !safeUrl(d.vid)){ $('err').textContent = 'The video link must start with http:// or https://'; return false; }
+    return true;
+  }
+  $('preview').onclick = function(){ var d=read(); if(valid(d)) show(d,true); };
+  $('make').onclick = function(){
+    var d = read(); if(!valid(d)) return;
+    var base = location.href.split('#')[0].split('?')[0];
+    $('link').value = base + '#l=' + enc(d);
+    $('share').hidden = false; $('link').select();
+  };
+  $('copy').onclick = function(){
+    $('link').select();
+    try{ navigator.clipboard.writeText($('link').value); }catch(e){ document.execCommand('copy'); }
+    $('copy').textContent = 'Copied'; setTimeout(function(){ $('copy').textContent='Copy link'; }, 1600);
+  };
+  $('back').onclick = function(e){ e.preventDefault(); clearTimeout(timer); $('stage').hidden = true; $('editor').hidden = false; };
+
+  /* --- opened from a share link? --- */
+  var m = location.hash.match(/^#l=(.+)$/);
+  if(m){ try{ show(dec(m[1]), false); }catch(e){} }
+})();
+</script>
+</body>
+</html>
